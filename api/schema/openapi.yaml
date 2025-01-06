@@ -1,0 +1,99 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Authenticated API Example
+  description: An example API which uses bearer token scopes and JWT auth
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+    variables:
+      port:
+        default: "8080"
+        description: The port to run the server on
+paths:
+  /auth/token:
+    post:
+      operationId: getToken
+      description: |
+        Returns a JWT token for a given username and password. This endpoint
+        does not require a JWT token to access.
+      requestBody:
+        description: A username and password to authenticate
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        200:
+          description: A JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+  /events:
+    get:
+      operationId: listEvents
+      description: |
+        Returns a list of events. This endpoint requires a JWT token with the
+        `read:events` scope to access.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: a list of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventsWithID"
+components:
+  schemas:
+    Events:
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+      required:
+        - name
+        - description
+    EventsWithID:
+      allOf:
+        - $ref: "#/components/schemas/Events"
+        - properties:
+            id:
+              type: string
+          required:
+            - id
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Error code
+        message:
+          type: string
+          description: Error message
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

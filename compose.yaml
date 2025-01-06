@@ -1,0 +1,9 @@
+services:
+  server:
+    image: sample-go-server:latest
+    ports:
+      - 8080:8080
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile
+    platform: linux/amd64

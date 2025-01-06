@@ -1,0 +1,8 @@
+{
+  "cSpell.words": ["labstack", "usecase", "gomock", "echomiddleware"],
+  "editor.formatOnSave": true,
+  "[go]": {
+    "editor.defaultFormatter": "golang.go"
+  },
+  "go.buildTags": "tools"
+}
