@@ -53,25 +53,35 @@ sample-go-server
 - `POST /auth/token`: Returns a JWT token for a given username and password.
 
   - **Request Body**:
+    - `Content-Type`: `application/x-www-form-urlencoded`
     - `username` (string, required): The username for authentication.
     - `password` (string, required): The password for authentication.
-  - **Response**: A JSON object containing the JWT token.
   - **Example Request**:
-    ```json
-    {
-      "username": "demo@example.com",
-      "password": "#demo"
-    }
+    ```bash
+      curl -X 'POST' \
+        'http://localhost:8080/auth/token' \
+        -H 'accept: application/json' \
+        -H 'Content-Type: application/x-www-form-urlencoded' \
+        -d 'username=demo%40example.com&password=%23demo'
     ```
+  - **Response**: A JSON object containing the JWT token.
   - **Example Response**:
-    ```json
-    {
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    }
-    ```
+
+  ```json
+  {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+  ```
 
 - `GET /events`: List all events.
   - **Note**: This endpoint returns demo data only.
+  - **Example Request**:
+    ```bash
+      curl -X 'GET' \
+       'http://localhost:8080/events' \
+        -H 'accept: application/json' \
+        -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    ```
   - **Response**: A JSON array of events.
   - **Example**:
     ```json
