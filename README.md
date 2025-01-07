@@ -66,12 +66,11 @@ sample-go-server
     ```
   - **Response**: A JSON object containing the JWT token.
   - **Example Response**:
-
-  ```json
-  {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-  ```
+    ```json
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+    ```
 
 - `GET /events`: List all events.
   - **Note**: This endpoint returns demo data only.
