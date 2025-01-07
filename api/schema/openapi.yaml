@@ -11,6 +11,13 @@ servers:
         default: "8080"
         description: The port to run the server on
 paths:
+  /health:
+    get:
+      operationId: healthCheck
+      description: A simple health check endpoint
+      responses:
+        200:
+          description: OK
   /auth/token:
     post:
       operationId: getToken
@@ -21,7 +28,7 @@ paths:
         description: A username and password to authenticate
         required: true
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
               type: object
               properties:

@@ -26,11 +26,10 @@ func NewRouter() *echo.Echo {
 		log.Fatalln("error creating middleware:", err)
 
 	}
-	e.Use(echomiddleware.Logger())
-	e.Use(mw...)
 
-	// allow CORS
-	e.Use(echomiddleware.CORS())
+	e.Use(echomiddleware.Logger())
+	e.Use(echomiddleware.CORS()) // CORS don't work if done after e.Use(mw...)
+	e.Use(mw...)
 
 	// Create an instance of our handler which satisfies the generated interface
 	h := NewHandler()

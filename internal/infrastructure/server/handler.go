@@ -43,8 +43,12 @@ func sendServerError(ctx echo.Context, code int, message string) error {
 // Ensure that we implement the server interface
 var _ api.ServerInterface = (*handler)(nil)
 
+func (h *handler) HealthCheck(ctx echo.Context) error {
+	return ctx.NoContent(http.StatusOK)
+}
+
 func (h *handler) GetToken(ctx echo.Context) error {
-	var tokenRequest api.GetTokenJSONBody
+	var tokenRequest api.GetTokenFormdataRequestBody
 	err := ctx.Bind(&tokenRequest)
 	if err != nil {
 		return sendServerError(ctx, http.StatusBadRequest, "could not bind request body")

@@ -18,6 +18,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
+	"github.com/oapi-codegen/runtime"
 )
 
 const (
@@ -48,14 +49,14 @@ type EventsWithID struct {
 	Name        string  `json:"name"`
 }
 
-// GetTokenJSONBody defines parameters for GetToken.
-type GetTokenJSONBody struct {
-	Password string `json:"password"`
-	Username string `json:"username"`
+// GetTokenFormdataBody defines parameters for GetToken.
+type GetTokenFormdataBody struct {
+	Password string `form:"password" json:"password"`
+	Username string `form:"username" json:"username"`
 }
 
-// GetTokenJSONRequestBody defines body for GetToken for application/json ContentType.
-type GetTokenJSONRequestBody GetTokenJSONBody
+// GetTokenFormdataRequestBody defines body for GetToken for application/x-www-form-urlencoded ContentType.
+type GetTokenFormdataRequestBody GetTokenFormdataBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -133,10 +134,13 @@ type ClientInterface interface {
 	// GetTokenWithBody request with any body
 	GetTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	GetToken(ctx context.Context, body GetTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTokenWithFormdataBody(ctx context.Context, body GetTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListEvents request
 	ListEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// HealthCheck request
+	HealthCheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -151,8 +155,8 @@ func (c *Client) GetTokenWithBody(ctx context.Context, contentType string, body 
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetToken(ctx context.Context, body GetTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTokenRequest(c.Server, body)
+func (c *Client) GetTokenWithFormdataBody(ctx context.Context, body GetTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTokenRequestWithFormdataBody(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -175,15 +179,27 @@ func (c *Client) ListEvents(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-// NewGetTokenRequest calls the generic GetToken builder with application/json body
-func NewGetTokenRequest(server string, body GetTokenJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
+func (c *Client) HealthCheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHealthCheckRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
-	bodyReader = bytes.NewReader(buf)
-	return NewGetTokenRequestWithBody(server, "application/json", bodyReader)
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewGetTokenRequestWithFormdataBody calls the generic GetToken builder with application/x-www-form-urlencoded body
+func NewGetTokenRequestWithFormdataBody(server string, body GetTokenFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewGetTokenRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
 }
 
 // NewGetTokenRequestWithBody generates requests for GetToken with any type of body
@@ -225,6 +241,33 @@ func NewListEventsRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/events")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewHealthCheckRequest generates requests for HealthCheck
+func NewHealthCheckRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/health")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -288,10 +331,13 @@ type ClientWithResponsesInterface interface {
 	// GetTokenWithBodyWithResponse request with any body
 	GetTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTokenResponse, error)
 
-	GetTokenWithResponse(ctx context.Context, body GetTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTokenResponse, error)
+	GetTokenWithFormdataBodyWithResponse(ctx context.Context, body GetTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*GetTokenResponse, error)
 
 	// ListEventsWithResponse request
 	ListEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEventsResponse, error)
+
+	// HealthCheckWithResponse request
+	HealthCheckWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthCheckResponse, error)
 }
 
 type GetTokenResponse struct {
@@ -340,6 +386,27 @@ func (r ListEventsResponse) StatusCode() int {
 	return 0
 }
 
+type HealthCheckResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r HealthCheckResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r HealthCheckResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // GetTokenWithBodyWithResponse request with arbitrary body returning *GetTokenResponse
 func (c *ClientWithResponses) GetTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTokenResponse, error) {
 	rsp, err := c.GetTokenWithBody(ctx, contentType, body, reqEditors...)
@@ -349,8 +416,8 @@ func (c *ClientWithResponses) GetTokenWithBodyWithResponse(ctx context.Context, 
 	return ParseGetTokenResponse(rsp)
 }
 
-func (c *ClientWithResponses) GetTokenWithResponse(ctx context.Context, body GetTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTokenResponse, error) {
-	rsp, err := c.GetToken(ctx, body, reqEditors...)
+func (c *ClientWithResponses) GetTokenWithFormdataBodyWithResponse(ctx context.Context, body GetTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*GetTokenResponse, error) {
+	rsp, err := c.GetTokenWithFormdataBody(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -364,6 +431,15 @@ func (c *ClientWithResponses) ListEventsWithResponse(ctx context.Context, reqEdi
 		return nil, err
 	}
 	return ParseListEventsResponse(rsp)
+}
+
+// HealthCheckWithResponse request returning *HealthCheckResponse
+func (c *ClientWithResponses) HealthCheckWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthCheckResponse, error) {
+	rsp, err := c.HealthCheck(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHealthCheckResponse(rsp)
 }
 
 // ParseGetTokenResponse parses an HTTP response from a GetTokenWithResponse call
@@ -420,6 +496,22 @@ func ParseListEventsResponse(rsp *http.Response) (*ListEventsResponse, error) {
 	return response, nil
 }
 
+// ParseHealthCheckResponse parses an HTTP response from a HealthCheckWithResponse call
+func ParseHealthCheckResponse(rsp *http.Response) (*HealthCheckResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HealthCheckResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -428,6 +520,9 @@ type ServerInterface interface {
 
 	// (GET /events)
 	ListEvents(ctx echo.Context) error
+
+	// (GET /health)
+	HealthCheck(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -452,6 +547,15 @@ func (w *ServerInterfaceWrapper) ListEvents(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ListEvents(ctx)
+	return err
+}
+
+// HealthCheck converts echo context to params.
+func (w *ServerInterfaceWrapper) HealthCheck(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.HealthCheck(ctx)
 	return err
 }
 
@@ -485,24 +589,26 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 
 	router.POST(baseURL+"/auth/token", wrapper.GetToken)
 	router.GET(baseURL+"/events", wrapper.ListEvents)
+	router.GET(baseURL+"/health", wrapper.HealthCheck)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
