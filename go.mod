@@ -4,6 +4,7 @@ go 1.22.4
 
 require (
 	github.com/getkin/kin-openapi v0.127.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/oapi-codegen/echo-middleware v1.0.2
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1

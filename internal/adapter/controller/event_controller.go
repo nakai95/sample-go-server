@@ -7,7 +7,7 @@ import (
 	"sample-go-server/internal/usecase"
 )
 
-type controller struct {
+type eventContr struct {
 	usecase domain.EventUseCase
 	pres    presenter.EventPresenter
 }
@@ -18,13 +18,13 @@ type EventController interface {
 
 func NewEventController(repo usecase.EventRepository, pres presenter.EventPresenter) EventController {
 	uc := usecase.NewEventUsecase(repo)
-	return &controller{
+	return &eventContr{
 		usecase: uc,
 		pres:    pres,
 	}
 }
 
-func (c *controller) ListEvents() ([]api.EventsWithID, error) {
+func (c *eventContr) ListEvents() ([]api.EventsWithID, error) {
 	events, err := c.usecase.ListEvents()
 	if err != nil {
 		return nil, err

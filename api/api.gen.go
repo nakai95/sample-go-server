@@ -25,6 +25,12 @@ const (
 	BearerAuthScopes = "BearerAuth.Scopes"
 )
 
+// ChatRoom defines model for ChatRoom.
+type ChatRoom struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	// Code Error code
@@ -136,11 +142,17 @@ type ClientInterface interface {
 
 	GetTokenWithFormdataBody(ctx context.Context, body GetTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListChatRooms request
+	ListChatRooms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListEvents request
 	ListEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// HealthCheck request
 	HealthCheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ChatWebSocket request
+	ChatWebSocket(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -167,6 +179,18 @@ func (c *Client) GetTokenWithFormdataBody(ctx context.Context, body GetTokenForm
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListChatRooms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListChatRoomsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListEventsRequest(c.Server)
 	if err != nil {
@@ -181,6 +205,18 @@ func (c *Client) ListEvents(ctx context.Context, reqEditors ...RequestEditorFn) 
 
 func (c *Client) HealthCheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewHealthCheckRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ChatWebSocket(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewChatWebSocketRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +267,33 @@ func NewGetTokenRequestWithBody(server string, contentType string, body io.Reade
 	return req, nil
 }
 
+// NewListChatRoomsRequest generates requests for ListChatRooms
+func NewListChatRoomsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/chats")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListEventsRequest generates requests for ListEvents
 func NewListEventsRequest(server string) (*http.Request, error) {
 	var err error
@@ -268,6 +331,40 @@ func NewHealthCheckRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/health")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewChatWebSocketRequest generates requests for ChatWebSocket
+func NewChatWebSocketRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/ws/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -333,11 +430,17 @@ type ClientWithResponsesInterface interface {
 
 	GetTokenWithFormdataBodyWithResponse(ctx context.Context, body GetTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*GetTokenResponse, error)
 
+	// ListChatRoomsWithResponse request
+	ListChatRoomsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListChatRoomsResponse, error)
+
 	// ListEventsWithResponse request
 	ListEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEventsResponse, error)
 
 	// HealthCheckWithResponse request
 	HealthCheckWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthCheckResponse, error)
+
+	// ChatWebSocketWithResponse request
+	ChatWebSocketWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ChatWebSocketResponse, error)
 }
 
 type GetTokenResponse struct {
@@ -358,6 +461,28 @@ func (r GetTokenResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListChatRoomsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]ChatRoom
+}
+
+// Status returns HTTPResponse.Status
+func (r ListChatRoomsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListChatRoomsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -407,6 +532,27 @@ func (r HealthCheckResponse) StatusCode() int {
 	return 0
 }
 
+type ChatWebSocketResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r ChatWebSocketResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ChatWebSocketResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // GetTokenWithBodyWithResponse request with arbitrary body returning *GetTokenResponse
 func (c *ClientWithResponses) GetTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTokenResponse, error) {
 	rsp, err := c.GetTokenWithBody(ctx, contentType, body, reqEditors...)
@@ -422,6 +568,15 @@ func (c *ClientWithResponses) GetTokenWithFormdataBodyWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseGetTokenResponse(rsp)
+}
+
+// ListChatRoomsWithResponse request returning *ListChatRoomsResponse
+func (c *ClientWithResponses) ListChatRoomsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListChatRoomsResponse, error) {
+	rsp, err := c.ListChatRooms(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListChatRoomsResponse(rsp)
 }
 
 // ListEventsWithResponse request returning *ListEventsResponse
@@ -442,6 +597,15 @@ func (c *ClientWithResponses) HealthCheckWithResponse(ctx context.Context, reqEd
 	return ParseHealthCheckResponse(rsp)
 }
 
+// ChatWebSocketWithResponse request returning *ChatWebSocketResponse
+func (c *ClientWithResponses) ChatWebSocketWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ChatWebSocketResponse, error) {
+	rsp, err := c.ChatWebSocket(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseChatWebSocketResponse(rsp)
+}
+
 // ParseGetTokenResponse parses an HTTP response from a GetTokenWithResponse call
 func ParseGetTokenResponse(rsp *http.Response) (*GetTokenResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -460,6 +624,32 @@ func ParseGetTokenResponse(rsp *http.Response) (*GetTokenResponse, error) {
 		var dest struct {
 			Token *string `json:"token,omitempty"`
 		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListChatRoomsResponse parses an HTTP response from a ListChatRoomsWithResponse call
+func ParseListChatRoomsResponse(rsp *http.Response) (*ListChatRoomsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListChatRoomsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []ChatRoom
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -512,17 +702,39 @@ func ParseHealthCheckResponse(rsp *http.Response) (*HealthCheckResponse, error) 
 	return response, nil
 }
 
+// ParseChatWebSocketResponse parses an HTTP response from a ChatWebSocketWithResponse call
+func ParseChatWebSocketResponse(rsp *http.Response) (*ChatWebSocketResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ChatWebSocketResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (POST /auth/token)
 	GetToken(ctx echo.Context) error
+	// List all chat rooms
+	// (GET /chats)
+	ListChatRooms(ctx echo.Context) error
 
 	// (GET /events)
 	ListEvents(ctx echo.Context) error
 
 	// (GET /health)
 	HealthCheck(ctx echo.Context) error
+	// WebSocket endpoint for chat
+	// (GET /ws/{id})
+	ChatWebSocket(ctx echo.Context, id string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -536,6 +748,15 @@ func (w *ServerInterfaceWrapper) GetToken(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetToken(ctx)
+	return err
+}
+
+// ListChatRooms converts echo context to params.
+func (w *ServerInterfaceWrapper) ListChatRooms(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListChatRooms(ctx)
 	return err
 }
 
@@ -556,6 +777,22 @@ func (w *ServerInterfaceWrapper) HealthCheck(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.HealthCheck(ctx)
+	return err
+}
+
+// ChatWebSocket converts echo context to params.
+func (w *ServerInterfaceWrapper) ChatWebSocket(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ChatWebSocket(ctx, id)
 	return err
 }
 
@@ -588,27 +825,32 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.POST(baseURL+"/auth/token", wrapper.GetToken)
+	router.GET(baseURL+"/chats", wrapper.ListChatRooms)
 	router.GET(baseURL+"/events", wrapper.ListEvents)
 	router.GET(baseURL+"/health", wrapper.HealthCheck)
+	router.GET(baseURL+"/ws/:id", wrapper.ChatWebSocket)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"H4sIAAAAAAAC/7xWTW/bSAz9KwPuHpXIaS+FbunH7qZboEXjRQ6JgU4k2ppGmtFyKLtG4P++4IxkWZaT",
+	"BiiwF8PScMjHR/JRj5C7unEWLXvIHsHnJdY6/H1Xav7qXC3/G3INEhsMJ6aQX942CBl4JmNXsEvA6hpP",
+	"HOwSIPy3NYQFZLdyuTNd7BL4QORoGiF3RXBVoM/JNGychSwaq3CWwNJRrRkyMJZfv4KkD2ss4wpJANXo",
+	"vV496ag/Tn6CuAvYmwfY656wMe5RmBMUmVqv8B+qfoG/YJWMIg2IbgyXV+/Fia6qz0vIbh/hd8IlZPBb",
+	"OlQ67cqcdnnskheVeFrJxW4hbz3mLRneXovb6OAtakK6bLmUp/vw9Edfso83c0hir4n/eDrUoWRuYCeO",
+	"jV26afkurcIfum4qVJdfrtSmNHmpWo9eRU+K3QNa5XPXoFfaFurjzVxpwZIAG64kiEBDyybXjEXw8yH6",
+	"hATWSD6Gujifnc+kOK5BqxsDGbwOrxJoNJch1VQ8pyFm6AjneYr5K3JL1isdsESAS0dKq5VZoxX4JKUN",
+	"cBvt/cZRca7mpfEKbdE4Y/nOFg69so5VV4eRO3ZK5zl6f35nISAmLdGvCsjgT+R5QBhriJ7fumIbZ80y",
+	"2gBZN00lhBhn0x9nm83mTKbsrKUKrUxBMUjEtPd70Cd7u0/v5121t0wGj4t9a7j775hzbI6jpjhNYWDl",
+	"oNRwGI2pxRDeN876mMar2ewZVr77ONlPkbDvgmmSL8hgX0s53iWQ5qWOMrPCZ3uqMp6VWypdVUruKHKu",
+	"9ueTLvhkPPe67uEXMzeMdbj4nMLst8jAgCbS29ME9HkMOQTqfFvXmrZdAkdZBosU94r8QqrihaMJ6+dq",
+	"PKcbw6XiEu/sN0JdZPHqtygwz4+d4O1E9v9ge7QFXsD4MR1wqOZhexzq+G0n92mJuorCfpLsS+VNUOdo",
+	"p/IS84c9xxOO/gpW78ToCZLG7j//3Y/HxqePptgdABl7lua7wftrlz8gB0EhXSMj+ZDb2O28RHX1Xrjg",
+	"Eof+AtlCkAW5779csvgVMxaS5KBYx9O/OMrrYnYxzet6YzgvjV2pL+TY5a467v59LkPDyg4RrLG6Hml9",
+	"OrtPLteVKnCNlWtqtKyiLSTQyvdIWLpZmlZiVzrP2ZvZG1lza01G31edxjvq6r3UbSWrvLOaUimmMhvU",
+	"2kBoDKdc0LbF7r8AAAD//+Jf+3Z5CgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

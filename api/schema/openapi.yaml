@@ -66,6 +66,34 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/EventsWithID"
+  /chats:
+    get:
+      summary: List all chat rooms
+      description: Returns a list of all chat rooms.
+      operationId: listChatRooms
+      responses:
+        200:
+          description: A list of chat rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatRoom"
+  /ws/{id}:
+    get:
+      summary: WebSocket endpoint for chat
+      operationId: chatWebSocket
+      parameters:
+        - name: id
+          in: path
+          description: The ID of the chat room
+          required: true
+          schema:
+            type: string
+      responses:
+        "101":
+          description: Switching Protocols
 components:
   schemas:
     Events:
@@ -87,6 +115,15 @@ components:
               type: string
           required:
             - id
+    ChatRoom:
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
     Error:
       required:
         - code

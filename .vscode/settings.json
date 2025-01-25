@@ -4,7 +4,8 @@
     "usecase",
     "gomock",
     "echomiddleware",
-    "oapi-codegen"
+    "oapi-codegen",
+    "upgrader"
   ],
   "editor.formatOnSave": true,
   "[go]": {
