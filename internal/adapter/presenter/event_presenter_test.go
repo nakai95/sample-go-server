@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"reflect"
+	"sample-go-server/api"
 	"sample-go-server/internal/domain"
 	"testing"
 )
@@ -10,24 +11,24 @@ func TestPresentEvents(t *testing.T) {
 	tests := []struct {
 		name   string
 		events []domain.Event
-		want   []domain.Event
+		want   []api.EventsWithID
 	}{
 		{
 			name: "success",
 			events: []domain.Event{
 				{
-					ID:          "1",
+					Id:          "1",
 					Name:        "Event 1",
 					Description: "homines dum docent discunt.",
-					ImageURL:    "https://picsum.photos/seed/example1/150",
+					ImageUrl:    "https://picsum.photos/seed/example1/150",
 				},
 			},
-			want: []domain.Event{
+			want: []api.EventsWithID{
 				{
-					ID:          "1",
+					Id:          "1",
 					Name:        "Event 1",
 					Description: "homines dum docent discunt.",
-					ImageURL:    "https://picsum.photos/seed/example1/150",
+					ImageUrl:    "https://picsum.photos/seed/example1/150",
 				},
 			},
 		},

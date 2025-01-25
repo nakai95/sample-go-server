@@ -29,10 +29,10 @@ func TestListEvents(t *testing.T) {
 	want := make([]domain.Event, 10)
 	for i := 0; i < 10; i++ {
 		want[i] = domain.Event{
-			ID:          fmt.Sprintf("%d", i),
+			Id:          fmt.Sprintf("%d", i),
 			Name:        fmt.Sprintf("Event %d", i),
 			Description: "homines dum docent discunt.",
-			ImageURL:    fmt.Sprintf("https://picsum.photos/seed/example%d/150", i),
+			ImageUrl:    fmt.Sprintf("https://picsum.photos/seed/example%d/150", i),
 		}
 	}
 

@@ -25,10 +25,10 @@ func (r *repository) ListEvents() ([]domain.Event, error) {
 	events := make([]domain.Event, 10)
 	for i := 0; i < 10; i++ {
 		events[i] = domain.Event{
-			ID:          fmt.Sprintf("%d", i),
+			Id:          fmt.Sprintf("%d", i),
 			Name:        fmt.Sprintf("Event %d", i),
 			Description: "homines dum docent discunt.",
-			ImageURL:    fmt.Sprintf("https://picsum.photos/seed/example%d/150", i),
+			ImageUrl:    fmt.Sprintf("https://picsum.photos/seed/example%d/150", i),
 		}
 	}
 	return events, nil

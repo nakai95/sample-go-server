@@ -1,10 +1,10 @@
 package domain
 
 type Event struct {
-	ID          string
+	Id          string
 	Name        string
 	Description string
-	ImageURL    string
+	ImageUrl    string
 }
 
 type EventUseCase interface {

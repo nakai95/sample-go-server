@@ -19,10 +19,10 @@ func TestListEvents(t *testing.T) {
 	errorRepo := mock.NewMockEventRepository(ctrl)
 
 	dummyEvent := domain.Event{
-		ID:          "1",
+		Id:          "1",
 		Name:        "Event 1",
 		Description: "homines dum docent discunt.",
-		ImageURL:    "https://picsum.photos/seed/example1/150",
+		ImageUrl:    "https://picsum.photos/seed/example1/150",
 	}
 
 	successRepo.EXPECT().ListEvents().Return([]domain.Event{dummyEvent}, nil).AnyTimes()
@@ -39,10 +39,10 @@ func TestListEvents(t *testing.T) {
 			repo: successRepo,
 			want: []domain.Event{
 				{
-					ID:          "1",
+					Id:          "1",
 					Name:        "Event 1",
 					Description: "homines dum docent discunt.",
-					ImageURL:    "https://picsum.photos/seed/example1/150",
+					ImageUrl:    "https://picsum.photos/seed/example1/150",
 				},
 			},
 			wantErr: false,

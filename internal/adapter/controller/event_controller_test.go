@@ -19,18 +19,17 @@ func TestListEvents(t *testing.T) {
 	mockPres := mock.NewMockEventPresenter(ctrl)
 
 	dummyEvent := domain.Event{
-		ID:          "1",
+		Id:          "1",
 		Name:        "Event 1",
 		Description: "homines dum docent discunt.",
-		ImageURL:    "https://picsum.photos/seed/example1/150",
+		ImageUrl:    "https://picsum.photos/seed/example1/150",
 	}
 
 	dummyEventWithID := api.EventsWithID{
-
-		Id:          dummyEvent.ID,
+		Id:          dummyEvent.Id,
 		Name:        dummyEvent.Name,
 		Description: dummyEvent.Description,
-		ImageUrl:    &dummyEvent.ImageURL,
+		ImageUrl:    dummyEvent.ImageUrl,
 	}
 
 	mockRepo.EXPECT().ListEvents().Return([]domain.Event{dummyEvent}, nil)

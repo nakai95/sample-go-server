@@ -107,6 +107,7 @@ components:
       required:
         - name
         - description
+        - imageUrl
     EventsWithID:
       allOf:
         - $ref: "#/components/schemas/Events"

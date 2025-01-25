@@ -23,10 +23,10 @@ func (p *presenter) PresentEvents(events []domain.Event) []api.EventsWithID {
 	var eventsWithID []api.EventsWithID
 	for _, event := range events {
 		eventWithID := api.EventsWithID{
-			Id:          event.ID,
+			Id:          event.Id,
 			Name:        event.Name,
 			Description: event.Description,
-			ImageUrl:    &event.ImageURL,
+			ImageUrl:    event.ImageUrl,
 		}
 		eventsWithID = append(eventsWithID, eventWithID)
 	}
