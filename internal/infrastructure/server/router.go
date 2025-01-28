@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"sample-go-server/api"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -20,19 +20,24 @@ func NewRouter() *echo.Echo {
 	// Create a authenticator
 	at := NewAuthenticator(secret)
 
+	e.Use(echomiddleware.Logger())
+
 	// Create middleware for the authenticator
 	mw, err := CreateMiddleware(at)
 	if err != nil {
-		log.Fatalln("error creating middleware:", err)
-
+		e.Logger.Fatal("error creating middleware:", err)
+		os.Exit(1)
 	}
 
-	e.Use(echomiddleware.Logger())
 	e.Use(echomiddleware.CORS()) // CORS don't work if done after e.Use(mw...)
 	e.Use(mw...)
 
 	// Create an instance of our handler which satisfies the generated interface
-	h := NewHandler()
+	h, err := NewHandler()
+	if err != nil {
+		e.Logger.Fatal("error creating handler:", err)
+		os.Exit(1)
+	}
 
 	// We now register our petStore above as the handler for the interface
 	api.RegisterHandlers(e, h)

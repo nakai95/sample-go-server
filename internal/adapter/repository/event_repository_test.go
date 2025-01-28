@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"reflect"
 	"sample-go-server/internal/domain"
 	"sample-go-server/mock"
@@ -16,8 +15,18 @@ func TestListEvents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	dummyEvent := domain.Event{
+		Id:          "6cf15595-cd47-40d9-ab99-89c4527e974f",
+		Name:        "Event 0",
+		Description: "homines dum docent discunt.",
+		ImageUrl:    "https://picsum.photos/seed/example0/150",
+	}
+
 	// mock DataStore
 	ds := mock.NewMockDataStore(ctrl)
+	ds.EXPECT().GetEvents().Return([]domain.Event{
+		dummyEvent,
+	}, nil).Times(1)
 
 	// create UserRepository
 	r := NewEventRepository(ds)
@@ -26,14 +35,8 @@ func TestListEvents(t *testing.T) {
 	got, err := r.ListEvents()
 
 	// then
-	want := make([]domain.Event, 10)
-	for i := 0; i < 10; i++ {
-		want[i] = domain.Event{
-			Id:          fmt.Sprintf("%d", i),
-			Name:        fmt.Sprintf("Event %d", i),
-			Description: "homines dum docent discunt.",
-			ImageUrl:    fmt.Sprintf("https://picsum.photos/seed/example%d/150", i),
-		}
+	want := []domain.Event{
+		dummyEvent,
 	}
 
 	// compare

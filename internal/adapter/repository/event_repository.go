@@ -8,28 +8,23 @@ import (
 	"sample-go-server/internal/usecase"
 )
 
-type DataStore interface {
-	// Add your data store methods here
+type EventDataStore interface {
+	AddEvent(event domain.DraftEvent) (string, error)
+	GetEvents() ([]domain.Event, error)
 }
 
 type repository struct {
-	ds DataStore
+	ds EventDataStore
 }
 
-func NewEventRepository(ds DataStore) usecase.EventRepository {
+func NewEventRepository(ds EventDataStore) usecase.EventRepository {
 	return &repository{ds: ds}
 }
 
 func (r *repository) ListEvents() ([]domain.Event, error) {
-	// create dummy data
-	events := make([]domain.Event, 10)
-	for i := 0; i < 10; i++ {
-		events[i] = domain.Event{
-			Id:          fmt.Sprintf("%d", i),
-			Name:        fmt.Sprintf("Event %d", i),
-			Description: "homines dum docent discunt.",
-			ImageUrl:    fmt.Sprintf("https://picsum.photos/seed/example%d/150", i),
-		}
+	events, err := r.ds.GetEvents()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
 	return events, nil
 }

@@ -7,3 +7,12 @@ services:
       context: .
       dockerfile: ./build/Dockerfile
     platform: linux/amd64
+  database:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sample
+    platform: linux/amd64

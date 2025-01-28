@@ -22,11 +22,14 @@ type handler struct {
 	chat  controller.ChatController
 }
 
-func NewHandler() *handler {
+func NewHandler() (*handler, error) {
 
-	ds := datastore.NewFakeDataStore()
+	manager, err := datastore.NewPostgresManager()
+	if err != nil {
+		return nil, err
+	}
 
-	eventRepo := repository.NewEventRepository(ds)
+	eventRepo := repository.NewEventRepository(manager.EventDataStore)
 	eventPres := presenter.NewEventPresenter()
 	eventCtrl := controller.NewEventController(eventRepo, eventPres)
 
@@ -35,7 +38,7 @@ func NewHandler() *handler {
 	return &handler{
 		event: eventCtrl,
 		chat:  chatCtrl,
-	}
+	}, nil
 }
 
 func sendServerError(ctx echo.Context, code int, message string) error {
@@ -89,7 +92,7 @@ func (h *handler) ListEvents(ctx echo.Context) error {
 
 	events, err := h.event.ListEvents()
 	if err != nil {
-		return sendServerError(ctx, http.StatusInternalServerError, "could not list events")
+		return sendServerError(ctx, http.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.JSON(http.StatusOK, events)
