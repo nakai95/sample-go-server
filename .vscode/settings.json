@@ -5,7 +5,9 @@
     "gomock",
     "echomiddleware",
     "oapi-codegen",
-    "upgrader"
+    "upgrader",
+    "testcontainers",
+    "testhelpers"
   ],
   "editor.formatOnSave": true,
   "[go]": {

@@ -1,8 +1,8 @@
 package datastore
 
 import (
-	"database/sql"
 	"sample-go-server/internal/domain"
+	"sample-go-server/test"
 	"testing"
 )
 
@@ -11,10 +11,10 @@ func TestAddEvent(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	// create db connection
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=user password=password dbname=sample sslmode=disable")
+	// setup postgres container
+	db, err := test.SetupPostgresContainer(t)
 	if err != nil {
-		t.Fatal("failed to open database:", err)
+		t.Fatal("failed to setup postgres container:", err)
 	}
 
 	dummyDraftEvent := domain.DraftEvent{
@@ -54,10 +54,21 @@ func TestGetEvents(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	// create db connection
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=user password=password dbname=sample sslmode=disable")
+	// setup postgres container
+	db, err := test.SetupPostgresContainer(t)
 	if err != nil {
-		t.Fatal("failed to open database:", err)
+		t.Fatal("failed to setup postgres container:", err)
+	}
+
+	// insert dummy data
+	dummyData := []string{
+		`INSERT INTO events (id, name, description, image_url) VALUES ('6cf15595-cd47-40d9-ab99-89c4527e974f', 'Event 0', 'homines dum docent discunt.', 'https://picsum.photos/seed/example0/150')`,
+	}
+
+	for _, query := range dummyData {
+		if _, err := db.Exec(query); err != nil {
+			t.Fatalf("failed to insert dummy data: %v", err)
+		}
 	}
 
 	tests := []struct {

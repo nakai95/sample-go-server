@@ -9,6 +9,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const tableName = "events"
+
 type eventDataStore struct {
 	DB *sql.DB
 }
@@ -20,7 +22,7 @@ func NewEventDatastore(db *sql.DB) repository.EventDataStore {
 func (ds *eventDataStore) AddEvent(event domain.DraftEvent) (string, error) {
 	id := uuid.New().String()
 	query := `
-        INSERT INTO events (id, name, description, image_url)
+        INSERT INTO ` + tableName + `  (id, name, description, image_url)
         VALUES ($1, $2, $3, $4)
     `
 	_, err := ds.DB.Exec(query, id, event.Name, event.Description, event.ImageUrl)
@@ -32,7 +34,6 @@ func (ds *eventDataStore) AddEvent(event domain.DraftEvent) (string, error) {
 }
 
 func (ds *eventDataStore) GetEvents() ([]domain.Event, error) {
-	tableName := "events"
 	query := `
 		SELECT id, name, description, image_url
 		FROM ` + tableName
