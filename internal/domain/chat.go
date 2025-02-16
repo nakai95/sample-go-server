@@ -1,10 +1,13 @@
 package domain
 
-// WebSocketMessage represents the structure of the message sent/received via WebSocket
-type WebSocketMessage struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Message string `json:"message"`
+import "time"
+
+type ChatMessage struct {
+	Id        string    `json:"id"`
+	RoomId    string    `json:"roomId"`
+	UserId    string    `json:"userId"`
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type ChatRoom struct {
@@ -14,4 +17,6 @@ type ChatRoom struct {
 
 type ChatUseCase interface {
 	ListChatRooms() ([]ChatRoom, error)
+	GetMessages(roomID string) ([]ChatMessage, error)
+	SaveMessage(message ChatMessage) error
 }

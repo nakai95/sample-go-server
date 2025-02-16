@@ -13,15 +13,15 @@ type EventDataStore interface {
 	GetEvents() ([]domain.Event, error)
 }
 
-type repository struct {
+type eventRepository struct {
 	ds EventDataStore
 }
 
 func NewEventRepository(ds EventDataStore) usecase.EventRepository {
-	return &repository{ds: ds}
+	return &eventRepository{ds: ds}
 }
 
-func (r *repository) ListEvents() ([]domain.Event, error) {
+func (r *eventRepository) ListEvents() ([]domain.Event, error) {
 	events, err := r.ds.GetEvents()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get events: %w", err)

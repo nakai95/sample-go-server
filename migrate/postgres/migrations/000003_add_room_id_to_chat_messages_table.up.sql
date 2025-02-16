@@ -1,0 +1,1 @@
+ALTER TABLE chat_messages ADD COLUMN room_id VARCHAR(36) NOT NULL;

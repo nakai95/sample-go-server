@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
@@ -24,6 +25,15 @@ import (
 const (
 	BearerAuthScopes = "BearerAuth.Scopes"
 )
+
+// ChatMessage defines model for ChatMessage.
+type ChatMessage struct {
+	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	Id        string     `json:"id"`
+	Message   string     `json:"message"`
+	RoomId    string     `json:"roomId"`
+	UserId    string     `json:"userId"`
+}
 
 // ChatRoom defines model for ChatRoom.
 type ChatRoom struct {
@@ -145,6 +155,9 @@ type ClientInterface interface {
 	// ListChatRooms request
 	ListChatRooms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListChatMessages request
+	ListChatMessages(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListEvents request
 	ListEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -181,6 +194,18 @@ func (c *Client) GetTokenWithFormdataBody(ctx context.Context, body GetTokenForm
 
 func (c *Client) ListChatRooms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListChatRoomsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListChatMessages(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListChatMessagesRequest(c.Server, roomId)
 	if err != nil {
 		return nil, err
 	}
@@ -277,6 +302,40 @@ func NewListChatRoomsRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/chats")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListChatMessagesRequest generates requests for ListChatMessages
+func NewListChatMessagesRequest(server string, roomId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "roomId", runtime.ParamLocationPath, roomId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/chats/%s/messages", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -433,6 +492,9 @@ type ClientWithResponsesInterface interface {
 	// ListChatRoomsWithResponse request
 	ListChatRoomsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListChatRoomsResponse, error)
 
+	// ListChatMessagesWithResponse request
+	ListChatMessagesWithResponse(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*ListChatMessagesResponse, error)
+
 	// ListEventsWithResponse request
 	ListEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEventsResponse, error)
 
@@ -483,6 +545,28 @@ func (r ListChatRoomsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListChatRoomsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListChatMessagesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]ChatMessage
+}
+
+// Status returns HTTPResponse.Status
+func (r ListChatMessagesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListChatMessagesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -579,6 +663,15 @@ func (c *ClientWithResponses) ListChatRoomsWithResponse(ctx context.Context, req
 	return ParseListChatRoomsResponse(rsp)
 }
 
+// ListChatMessagesWithResponse request returning *ListChatMessagesResponse
+func (c *ClientWithResponses) ListChatMessagesWithResponse(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*ListChatMessagesResponse, error) {
+	rsp, err := c.ListChatMessages(ctx, roomId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListChatMessagesResponse(rsp)
+}
+
 // ListEventsWithResponse request returning *ListEventsResponse
 func (c *ClientWithResponses) ListEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEventsResponse, error) {
 	rsp, err := c.ListEvents(ctx, reqEditors...)
@@ -660,6 +753,32 @@ func ParseListChatRoomsResponse(rsp *http.Response) (*ListChatRoomsResponse, err
 	return response, nil
 }
 
+// ParseListChatMessagesResponse parses an HTTP response from a ListChatMessagesWithResponse call
+func ParseListChatMessagesResponse(rsp *http.Response) (*ListChatMessagesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListChatMessagesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []ChatMessage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListEventsResponse parses an HTTP response from a ListEventsWithResponse call
 func ParseListEventsResponse(rsp *http.Response) (*ListEventsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -726,6 +845,9 @@ type ServerInterface interface {
 	// List all chat rooms
 	// (GET /chats)
 	ListChatRooms(ctx echo.Context) error
+	// List all messages in a chat room
+	// (GET /chats/{roomId}/messages)
+	ListChatMessages(ctx echo.Context, roomId string) error
 
 	// (GET /events)
 	ListEvents(ctx echo.Context) error
@@ -757,6 +879,22 @@ func (w *ServerInterfaceWrapper) ListChatRooms(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ListChatRooms(ctx)
+	return err
+}
+
+// ListChatMessages converts echo context to params.
+func (w *ServerInterfaceWrapper) ListChatMessages(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "roomId" -------------
+	var roomId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roomId", ctx.Param("roomId"), &roomId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter roomId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListChatMessages(ctx, roomId)
 	return err
 }
 
@@ -826,6 +964,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 
 	router.POST(baseURL+"/auth/token", wrapper.GetToken)
 	router.GET(baseURL+"/chats", wrapper.ListChatRooms)
+	router.GET(baseURL+"/chats/:roomId/messages", wrapper.ListChatMessages)
 	router.GET(baseURL+"/events", wrapper.ListEvents)
 	router.GET(baseURL+"/health", wrapper.HealthCheck)
 	router.GET(baseURL+"/ws/:id", wrapper.ChatWebSocket)
@@ -835,22 +974,23 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7xWTW/bOBD9KwR3j0rktJdCt/Rjd9Mt0KLxIofEQBlqbLKROFpyZNcI/N8XQ0qWZTlp",
-	"gAJ7MWxzNPPmvZlHPUqNdYMOHAVZPMqgDdQqfn1nFH1FrPl747EBTxbiiS35k7YNyEIG8tat5C6TTtVw",
-	"4mCXSQ//ttZDKYtbfrgLXewy+cF79NMKGsuYqoSgvW3IopNFChbxLJNL9LUiWUjr6PUrmfVlrSNYgWdA",
-	"NYSgVk8m6o+znyDuCvbhEfa6J2yMe1TmBEW2Viv4x1e/wF+MykaVDvIO4G4smav3nE9V1eelLG4f5e8e",
-	"lrKQv+WD6HmneN61tMtepPZU1MVuwf8G0K23tL3mtCnBW1Ae/GVLhn/dx19/9Op9vJnLLI0d50+ngySG",
-	"qJE7TmzdEqdKXjoBP1TdVCAuv1yJjbHaiDZAECmTIHwAJ4LGBoJQrhQfb+ZCMZZMkqWKizA0cGS1Iihj",
-	"ng8pp8zkGnxIpS7OZ+cz1gkbcKqxspCv41+ZbBSZ2GrOmfNYMw4HBppi/grUeheEilgSwCV6ocTKrsEx",
-	"fM8qR7iNCmGDvjwXc2ODAFc2aB3duRIhCIckOh1G6QiF0hpCOL/j8WA5FVe/KmUh/wSaR4RJQwj0Fstt",
-	"WjtH4CJk1TQVE2LR5T/ONpvNGS/cWesrcLwQ5eAW0zXoQZ8c8769n0/VPjIbMi72o4H330FTGo6joThN",
-	"YWTlQGp5WI18C7F8aNCF1Mar2ewZVr6HtORPkbCfgmmTL+hgryUf7zKZa6OS46zg2ZmqbCCBS6GqSvAz",
-	"wiPW4XwyBZ9soN7ig/zFzi1BHR98zmH2F8rAgPJebU8T0Pcx9BCpC21dK7/tGjjqMkbksDfnF1KVHjja",
-	"sH6vxnu6sWQEGbhz3zyoskiPfksG8/zaMd7OZP8Ptke3wAsYP6ZDHrp5vD0Offy2s/vcgKqSsZ8k+1IE",
-	"G905xQltQD/sOZ5w9FeMesdBT5A0Tv/57349NiF/tOXuAMg4Mw/fDdxfo34AiobiVQ0EPsTexmnnBsTV",
-	"e+aCDAzzxRctH7Pd9y8xRXqhGRtJdiDW8fYvjvq6mF1M+7reWNLGupX44pFQY3U8/ftehoHlO4SxJnUD",
-	"+PXp7j6hVpUoYQ0VNjU4EilWZrLlV5N46RZ5XnGcwUDFm9kbvubWylt1X3Uej77Te6naiq/yLmpKJYfy",
-	"bvjWRUJTOYHR2xa7/wIAAP//uyYOWoQKAAA=",
+	"H4sIAAAAAAAC/7xWTW/bOBD9KwR3j4rltJdCN7fN7qbbokXjRQ6JgTLU2GIjkVpyZNcw/N8XQ+rDsuSs",
+	"ixS5WeZw3sx788Edl6YojQaNjic77mQGhfA/32UCP4FzYgX0WVpTgkUF/lBaEAjpDOljaWwhkCc8FQgX",
+	"qArgEcdtCTzhDq3SK76PuErJdvB30UEMzqwxxfX4tcqBHT2ia/BvpSykPLkj1NZPe6tDXewjn+hXY4ph",
+	"lidC1qKAM5G9KYFcWWvsCI8m9a5ScNKqEpXRPAnGzJ9FHbtK4+tXHbNKI6zAHnE45qg5jv4n4hrwkJur",
+	"dVMZ/bh7MCMUqUKs4B+bP4M/bxX1kA78dsHdKsyu35M/keeflzy52/HfLSx5wn+Lu+qO69KO65T20Vlq",
+	"D0Vd7Bf0rwNZWYXbG3IbHLwFYcHOKszo68F//dGo9+F2zqPQX+Q/nHaSZIgl35NjpZdmqORMM/ghijIH",
+	"NvtyzTaZkhmrHDgWPDE0j6CZk6YEx4RO2YfbORMUS8RRYU4gFBpoVJJ61/u5Cj55xNdgXYC6nEwnU9LJ",
+	"lKBFqXjCX/u/Il4KzHyqMXmOPaYvDuNwGPNXwMpqx4SPJQS4NJYJtlJr0BS+JZV9uKVwbmNsOmHzTDkG",
+	"Oi2N0nivUwOOaYOs1qHnDg0TUoJzk3sqD5JTEDqNBv4n4NxHGDQEh29Nug1tpxG0D1mUZU6EKKPjHxeb",
+	"zeaCGu6isjloaoi0G4vDNmiCPjmiziv11jLqPC7a0jAP30FiKI6johin0LNyIDU/RENbgYd3pdEupPFq",
+	"On2Cle8uNPkpEtoqGCZ5RgatlnS8j3gsMxEmzgqerKlcOWRmyUSeM7rDaMq7yaAKPiqHzYh3/JmZK4TC",
+	"X3xqwrQLpWNAWCu24wQ0eXQ5eOpcVRTCbusEjrLkHVPxLmy3fVzP7Z/lrrnGlGaiwzhN5KcGh6rVigIQ",
+	"rPNjtw83z4BdvycYzKBzTFOcjmmWNBsy6VZ0v1KjA+6Py2vxUlo2r6Cfl7OV5ISiJ7gP8kK7e89UM1w4",
+	"GqDN2OyP4Y3CjGS5198siDQJV7+F/fH0VKXg6x36EgL0lvwZChzTwQ+Xta/SwzV9V2/zOAORh709SvaM",
+	"OeWXb7BjMgP52HI84Ogvb/WOjE6Q1Hf/+e9m+m1cvFPp/iCQvmeqx1t4uDHyEfCXdqB6XvddTi+Hed1s",
+	"FMpM6RX7Yg0aafLjVmhz6QqWnggUa1DXgV2PZ/fRSJGzFNaQm7IAjSzY0jufXp7+TZXEcU52mXGYvJm+",
+	"oVfMWlglHvJ6hRtb670UVU4vtdpqSCWZUm/YSntCAxwzfnUt9v8FAAD//8b/OoNMDQAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -8,27 +8,38 @@ import (
 
 type ChatRepository interface {
 	ListChatRooms() ([]domain.ChatRoom, error)
+	GetMessages(roomID string) ([]domain.ChatMessage, error)
+	SaveMessage(message domain.ChatMessage) error
 }
 
 type ChatUsecase struct {
+	repository ChatRepository
 }
 
-func NewChatUsecase() domain.ChatUseCase {
-	return &ChatUsecase{}
+func NewChatUsecase(repository ChatRepository) domain.ChatUseCase {
+	return &ChatUsecase{repository: repository}
 }
 
 func (u *ChatUsecase) ListChatRooms() ([]domain.ChatRoom, error) {
-	// dummy
-	chatRooms := []domain.ChatRoom{
-		{
-			ID:   "1",
-			Name: "Room 1",
-		},
-		{
-			ID:   "2",
-			Name: "Room 2",
-		},
+	chatRooms, err := u.repository.ListChatRooms()
+	if err != nil {
+		return nil, err
 	}
 	return chatRooms, nil
+}
 
+func (u *ChatUsecase) GetMessages(roomID string) ([]domain.ChatMessage, error) {
+	messages, err := u.repository.GetMessages(roomID)
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
+func (u *ChatUsecase) SaveMessage(message domain.ChatMessage) error {
+	err := u.repository.SaveMessage(message)
+	if err != nil {
+		return err
+	}
+	return nil
 }

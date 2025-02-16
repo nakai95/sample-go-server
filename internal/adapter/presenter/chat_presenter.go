@@ -9,6 +9,7 @@ import (
 
 type ChatPresenter interface {
 	PresentChatRooms(rooms []domain.ChatRoom) []api.ChatRoom
+	PresentChatMessages(messages []domain.ChatMessage) []api.ChatMessage
 }
 
 type chatPres struct {
@@ -29,4 +30,20 @@ func (p *chatPres) PresentChatRooms(rooms []domain.ChatRoom) []api.ChatRoom {
 		chatRooms = append(chatRooms, chatRoom)
 	}
 	return chatRooms
+}
+
+func (p *chatPres) PresentChatMessages(messages []domain.ChatMessage) []api.ChatMessage {
+	// Convert domain.ChatMessage to api.ChatMessage
+	var chatMessages []api.ChatMessage
+	for _, message := range messages {
+		chatMessage := api.ChatMessage{
+			Id:        message.Id,
+			RoomId:    message.RoomId,
+			UserId:    message.UserId,
+			Message:   message.Message,
+			CreatedAt: &message.CreatedAt,
+		}
+		chatMessages = append(chatMessages, chatMessage)
+	}
+	return chatMessages
 }

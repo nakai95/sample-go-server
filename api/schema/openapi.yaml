@@ -80,6 +80,27 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ChatRoom"
+  /chats/{roomId}/messages:
+    get:
+      summary: List all messages in a chat room
+      description: Returns a list of all messages in a chat room.
+      operationId: listChatMessages
+      parameters:
+        - name: roomId
+          in: path
+          description: The ID of the chat room
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: A list of chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
   /ws/{id}:
     get:
       summary: WebSocket endpoint for chat
@@ -125,6 +146,24 @@ components:
       required:
         - id
         - name
+    ChatMessage:
+      properties:
+        id:
+          type: string
+        roomId:
+          type: string
+        userId:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - roomId
+        - userId
+        - message
     Error:
       required:
         - code

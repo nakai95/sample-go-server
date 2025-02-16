@@ -23,7 +23,7 @@ func TestListEvents(t *testing.T) {
 	}
 
 	// mock DataStore
-	ds := mock.NewMockDataStore(ctrl)
+	ds := mock.NewMockEventDataStore(ctrl)
 	ds.EXPECT().GetEvents().Return([]domain.Event{
 		dummyEvent,
 	}, nil).Times(1)

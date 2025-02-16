@@ -33,7 +33,9 @@ func NewHandler() (*handler, error) {
 	eventPres := presenter.NewEventPresenter()
 	eventCtrl := controller.NewEventController(eventRepo, eventPres)
 
-	chatCtrl := controller.NewChatController(presenter.NewChatPresenter())
+	chatRepo := repository.NewChatRepository(manager.ChatDataStore)
+	chatPres := presenter.NewChatPresenter()
+	chatCtrl := controller.NewChatController(chatRepo, chatPres)
 
 	return &handler{
 		event: eventCtrl,
@@ -117,12 +119,6 @@ var (
 		}}
 )
 
-type WebSocketMessage struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Message string `json:"message"`
-}
-
 func handleMessages(client *Client) {
 	for message := range client.Send {
 		client.Conn.WriteMessage(websocket.TextMessage, message)
@@ -149,7 +145,7 @@ func (h *handler) ChatWebSocket(ctx echo.Context, id string) error {
 	go handleMessages(client)
 
 	for {
-		var msg WebSocketMessage
+		var msg api.ChatMessage
 
 		// Read message from client
 		_, readMsg, err := ws.ReadMessage()
@@ -162,6 +158,9 @@ func (h *handler) ChatWebSocket(ctx echo.Context, id string) error {
 		if err != nil {
 			return sendServerError(ctx, http.StatusInternalServerError, "could not unmarshal message")
 		}
+		if err := h.chat.SaveMessage(msg); err != nil {
+			return sendServerError(ctx, http.StatusInternalServerError, "could not save message")
+		}
 
 		// Marshal the message back to JSON
 		writeMsg, err := json.Marshal(msg)
@@ -172,4 +171,16 @@ func (h *handler) ChatWebSocket(ctx echo.Context, id string) error {
 		// Broadcast the message to all clients
 		room.Broadcast <- writeMsg
 	}
+}
+
+func (h *handler) ListChatMessages(ctx echo.Context, roomId string) error {
+	h.RLock()
+	defer h.RUnlock()
+
+	messages, err := h.chat.GetMessages(roomId)
+	if err != nil {
+		return sendServerError(ctx, http.StatusInternalServerError, "could not get messages")
+	}
+
+	return ctx.JSON(http.StatusOK, messages)
 }

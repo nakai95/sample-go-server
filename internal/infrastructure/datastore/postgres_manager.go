@@ -11,6 +11,7 @@ import (
 type postgresManager struct {
 	db             *sql.DB
 	EventDataStore repository.EventDataStore
+	ChatDataStore  repository.ChatDataStore
 }
 
 func NewPostgresManager() (*postgresManager, error) {
@@ -20,8 +21,9 @@ func NewPostgresManager() (*postgresManager, error) {
 	}
 
 	event := NewEventDatastore(db)
+	chat := NewChatDatastore(db)
 
-	return &postgresManager{db: db, EventDataStore: event}, nil
+	return &postgresManager{db: db, EventDataStore: event, ChatDataStore: chat}, nil
 }
 
 func (manager *postgresManager) Close() error {
