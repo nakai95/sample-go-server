@@ -8,7 +8,7 @@ import (
 )
 
 type ChatDataStore interface {
-	GetMessages(roomID string) ([]domain.ChatMessage, error)
+	GetMessages(roomId string, limit, offset int) ([]domain.ChatMessage, error)
 	AddMessage(message domain.ChatMessage) (string, error)
 }
 
@@ -35,8 +35,8 @@ func (r *chatRepository) ListChatRooms() ([]domain.ChatRoom, error) {
 	return chatRooms, nil
 }
 
-func (r *chatRepository) GetMessages(roomID string) ([]domain.ChatMessage, error) {
-	messages, err := r.ds.GetMessages(roomID)
+func (r *chatRepository) GetMessages(roomId string, limit, offset int) ([]domain.ChatMessage, error) {
+	messages, err := r.ds.GetMessages(roomId, limit, offset)
 	if err != nil {
 		return nil, err
 	}

@@ -71,6 +71,15 @@ type GetTokenFormdataBody struct {
 	Username string `form:"username" json:"username"`
 }
 
+// ListChatMessagesParams defines parameters for ListChatMessages.
+type ListChatMessagesParams struct {
+	// Limit The number of messages to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset The number of messages to skip before starting to collect the result set
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetTokenFormdataRequestBody defines body for GetToken for application/x-www-form-urlencoded ContentType.
 type GetTokenFormdataRequestBody GetTokenFormdataBody
 
@@ -156,7 +165,7 @@ type ClientInterface interface {
 	ListChatRooms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListChatMessages request
-	ListChatMessages(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListChatMessages(ctx context.Context, roomId string, params *ListChatMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListEvents request
 	ListEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -204,8 +213,8 @@ func (c *Client) ListChatRooms(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListChatMessages(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListChatMessagesRequest(c.Server, roomId)
+func (c *Client) ListChatMessages(ctx context.Context, roomId string, params *ListChatMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListChatMessagesRequest(c.Server, roomId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +329,7 @@ func NewListChatRoomsRequest(server string) (*http.Request, error) {
 }
 
 // NewListChatMessagesRequest generates requests for ListChatMessages
-func NewListChatMessagesRequest(server string, roomId string) (*http.Request, error) {
+func NewListChatMessagesRequest(server string, roomId string, params *ListChatMessagesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -343,6 +352,44 @@ func NewListChatMessagesRequest(server string, roomId string) (*http.Request, er
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -493,7 +540,7 @@ type ClientWithResponsesInterface interface {
 	ListChatRoomsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListChatRoomsResponse, error)
 
 	// ListChatMessagesWithResponse request
-	ListChatMessagesWithResponse(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*ListChatMessagesResponse, error)
+	ListChatMessagesWithResponse(ctx context.Context, roomId string, params *ListChatMessagesParams, reqEditors ...RequestEditorFn) (*ListChatMessagesResponse, error)
 
 	// ListEventsWithResponse request
 	ListEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEventsResponse, error)
@@ -664,8 +711,8 @@ func (c *ClientWithResponses) ListChatRoomsWithResponse(ctx context.Context, req
 }
 
 // ListChatMessagesWithResponse request returning *ListChatMessagesResponse
-func (c *ClientWithResponses) ListChatMessagesWithResponse(ctx context.Context, roomId string, reqEditors ...RequestEditorFn) (*ListChatMessagesResponse, error) {
-	rsp, err := c.ListChatMessages(ctx, roomId, reqEditors...)
+func (c *ClientWithResponses) ListChatMessagesWithResponse(ctx context.Context, roomId string, params *ListChatMessagesParams, reqEditors ...RequestEditorFn) (*ListChatMessagesResponse, error) {
+	rsp, err := c.ListChatMessages(ctx, roomId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -847,7 +894,7 @@ type ServerInterface interface {
 	ListChatRooms(ctx echo.Context) error
 	// List all messages in a chat room
 	// (GET /chats/{roomId}/messages)
-	ListChatMessages(ctx echo.Context, roomId string) error
+	ListChatMessages(ctx echo.Context, roomId string, params ListChatMessagesParams) error
 
 	// (GET /events)
 	ListEvents(ctx echo.Context) error
@@ -893,8 +940,24 @@ func (w *ServerInterfaceWrapper) ListChatMessages(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter roomId: %s", err))
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListChatMessagesParams
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", ctx.QueryParams(), &params.Offset)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter offset: %s", err))
+	}
+
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListChatMessages(ctx, roomId)
+	err = w.Handler.ListChatMessages(ctx, roomId, params)
 	return err
 }
 
@@ -974,23 +1037,25 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"AQAA//+YN8qMZA4AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

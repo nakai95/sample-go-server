@@ -19,13 +19,15 @@ func NewChatDatastore(db *sql.DB) repository.ChatDataStore {
 	return &chatDataStore{DB: db}
 }
 
-func (ds *chatDataStore) GetMessages(roomID string) ([]domain.ChatMessage, error) {
+func (ds *chatDataStore) GetMessages(roomId string, limit, offset int) ([]domain.ChatMessage, error) {
 	query := `
 		SELECT id, room_id, user_id, message, created_at
 		FROM ` + chatTableName + `
 		WHERE room_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
 	`
-	rows, err := ds.DB.Query(query, roomID)
+	rows, err := ds.DB.Query(query, roomId, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +39,7 @@ func (ds *chatDataStore) GetMessages(roomID string) ([]domain.ChatMessage, error
 		if err := rows.Scan(&message.Id, &message.RoomId, &message.UserId, &message.Message, &message.CreatedAt); err != nil {
 			return nil, err
 		}
+		message.CreatedAt = message.CreatedAt.UTC()
 		messages = append(messages, message)
 	}
 

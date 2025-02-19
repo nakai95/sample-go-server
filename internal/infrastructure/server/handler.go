@@ -173,11 +173,14 @@ func (h *handler) ChatWebSocket(ctx echo.Context, id string) error {
 	}
 }
 
-func (h *handler) ListChatMessages(ctx echo.Context, roomId string) error {
+func (h *handler) ListChatMessages(ctx echo.Context, roomId string, params api.ListChatMessagesParams) error {
 	h.RLock()
 	defer h.RUnlock()
 
-	messages, err := h.chat.GetMessages(roomId)
+	limit := *params.Limit
+	offset := *params.Offset
+
+	messages, err := h.chat.GetMessages(roomId, limit, offset)
 	if err != nil {
 		return sendServerError(ctx, http.StatusInternalServerError, "could not get messages")
 	}

@@ -15,7 +15,7 @@ type chatCtrl struct {
 
 type ChatController interface {
 	ListChatRooms() ([]api.ChatRoom, error)
-	GetMessages(roomID string) ([]api.ChatMessage, error)
+	GetMessages(roomID string, limit, offset int) ([]api.ChatMessage, error)
 	SaveMessage(message api.ChatMessage) error
 }
 
@@ -35,8 +35,8 @@ func (c *chatCtrl) ListChatRooms() ([]api.ChatRoom, error) {
 	return c.pres.PresentChatRooms(Chats), nil
 }
 
-func (c *chatCtrl) GetMessages(roomID string) ([]api.ChatMessage, error) {
-	messages, err := c.usecase.GetMessages(roomID)
+func (c *chatCtrl) GetMessages(roomId string, limit, offset int) ([]api.ChatMessage, error) {
+	messages, err := c.usecase.GetMessages(roomId, limit, offset)
 	if err != nil {
 		return nil, err
 	}

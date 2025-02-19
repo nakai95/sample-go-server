@@ -8,7 +8,7 @@ import (
 
 type ChatRepository interface {
 	ListChatRooms() ([]domain.ChatRoom, error)
-	GetMessages(roomID string) ([]domain.ChatMessage, error)
+	GetMessages(roomId string, limit, offset int) ([]domain.ChatMessage, error)
 	SaveMessage(message domain.ChatMessage) error
 }
 
@@ -28,8 +28,8 @@ func (u *ChatUsecase) ListChatRooms() ([]domain.ChatRoom, error) {
 	return chatRooms, nil
 }
 
-func (u *ChatUsecase) GetMessages(roomID string) ([]domain.ChatMessage, error) {
-	messages, err := u.repository.GetMessages(roomID)
+func (u *ChatUsecase) GetMessages(roomId string, limit, offset int) ([]domain.ChatMessage, error) {
+	messages, err := u.repository.GetMessages(roomId, limit, offset)
 	if err != nil {
 		return nil, err
 	}

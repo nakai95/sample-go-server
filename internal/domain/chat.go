@@ -17,6 +17,6 @@ type ChatRoom struct {
 
 type ChatUseCase interface {
 	ListChatRooms() ([]ChatRoom, error)
-	GetMessages(roomID string) ([]ChatMessage, error)
+	GetMessages(roomId string, limit, offset int) ([]ChatMessage, error)
 	SaveMessage(message ChatMessage) error
 }
