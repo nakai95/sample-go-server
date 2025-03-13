@@ -1,4 +1,4 @@
-package datastore
+package postgres
 
 import (
 	"reflect"
@@ -14,10 +14,7 @@ func TestAddMessage(t *testing.T) {
 	}
 
 	// setup postgres container
-	db, err := test.SetupPostgresContainer(t)
-	if err != nil {
-		t.Fatal("failed to setup postgres container:", err)
-	}
+	db := test.SetupPostgresContainer(t)
 
 	dummyChatMessage := domain.ChatMessage{
 		Id:        "1",
@@ -59,10 +56,7 @@ func TestGetMessages(t *testing.T) {
 	}
 
 	// setup postgres container
-	db, err := test.SetupPostgresContainer(t)
-	if err != nil {
-		t.Fatal("failed to setup postgres container:", err)
-	}
+	db := test.SetupPostgresContainer(t)
 
 	// insert dummy data
 	dummyData := []string{

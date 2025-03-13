@@ -1,4 +1,4 @@
-package datastore
+package postgres
 
 import (
 	"sample-go-server/internal/domain"
@@ -12,10 +12,7 @@ func TestAddEvent(t *testing.T) {
 	}
 
 	// setup postgres container
-	db, err := test.SetupPostgresContainer(t)
-	if err != nil {
-		t.Fatal("failed to setup postgres container:", err)
-	}
+	db := test.SetupPostgresContainer(t)
 
 	dummyDraftEvent := domain.DraftEvent{
 		Name:        "Event 1",
@@ -55,10 +52,7 @@ func TestGetEvents(t *testing.T) {
 	}
 
 	// setup postgres container
-	db, err := test.SetupPostgresContainer(t)
-	if err != nil {
-		t.Fatal("failed to setup postgres container:", err)
-	}
+	db := test.SetupPostgresContainer(t)
 
 	// insert dummy data
 	dummyData := []string{

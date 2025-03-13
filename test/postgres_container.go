@@ -19,7 +19,7 @@ import (
 
 var db *sql.DB
 
-func SetupPostgresContainer(t *testing.T) (*sql.DB, error) {
+func SetupPostgresContainer(t *testing.T) *sql.DB {
 	t.Helper()
 	ctx := context.Background()
 
@@ -65,7 +65,7 @@ func SetupPostgresContainer(t *testing.T) (*sql.DB, error) {
 	if err != nil {
 		t.Fatalf("failed to open database: %s", err)
 	}
-	return db, nil
+	return db
 }
 
 func runMigrations(dbName string, dbUser string, dbPassword string, port int) error {

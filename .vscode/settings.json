@@ -7,7 +7,8 @@
     "oapi-codegen",
     "upgrader",
     "testcontainers",
-    "testhelpers"
+    "testhelpers",
+    "firestore"
   ],
   "editor.formatOnSave": true,
   "[go]": {

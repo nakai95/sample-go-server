@@ -16,3 +16,16 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: sample
     platform: linux/amd64
+  firestore:
+    build:
+      context: .
+      dockerfile: ./build/firestore/Dockerfile
+    ports:
+      - 4000:4000
+      - 9150:9150
+    volumes:
+      - ./build/firestore/.firebaserc:/build/firestore/.firebaserc
+      - ./build/firestore/firebase.json:/build/firestore/firebase.json
+    tty: true
+    working_dir: /build/firestore
+    command: firebase emulators:start --project ${FIREBASE_PROJECT}

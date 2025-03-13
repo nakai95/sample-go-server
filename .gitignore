@@ -30,3 +30,6 @@ mock
 
 # Debug files
 __debug_bin*
+
+# Environment variables file
+.env

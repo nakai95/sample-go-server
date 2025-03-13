@@ -7,7 +7,7 @@ import (
 	"sample-go-server/internal/adapter/controller"
 	"sample-go-server/internal/adapter/presenter"
 	"sample-go-server/internal/adapter/repository"
-	"sample-go-server/internal/infrastructure/datastore"
+	datastore "sample-go-server/internal/infrastructure/datastore/postgres"
 	"sync"
 	"time"
 
